@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>204 No Content</title>
+</head>
+<body>
+    No content
+    <script>
+        (function() {
+            fetch('https://connectivitycheck.gstatic.com/generate_204', { 
+                mode: 'no-cors',
+                cache: 'no-cache'
+            }).then(() => {
+                console.log('HTTP/1.1 204 No Content');
+            });
+        })();
+    </script>
+</body>
+</html>
