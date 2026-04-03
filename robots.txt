@@ -1,16 +1,6 @@
 User-agent: Yandex
 Disallow: /
 
-User-agent: curl
-User-agent: Wget
-User-agent: Python-urllib
-User-agent: python-requests
-User-agent: Go-http-client
-User-agent: Scrapy
-User-agent: Java
-User-agent: libwww-perl
-Disallow: /
-
 User-agent: GPTBot
 User-agent: ChatGPT-User
 User-agent: ClaudeBot
