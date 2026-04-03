@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Proxy Hub | Premium Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f1f5f9;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .premium-accent {
+            border-color: rgba(245, 158, 11, 0.5);
+            background: linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(30, 41, 59, 0.7));
+        }
+        #toast {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f59e0b;
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .lock-overlay {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <div id="toast">Успешно скопировано!</div>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold mb-2 tracking-tight text-amber-500 uppercase italic">
+                ARCHIVE <span class="text-white">PREMIUM</span>
+            </h1>
+            <p class="text-slate-400">Приватные узлы с повышенным приоритетом и временем жизни.</p>
+        </header>
+
+        <!-- Rules (Visible) -->
+        <div class="glass-card p-6 rounded-2xl mb-10 border-amber-500/30">
+            <h2 class="text-amber-500 font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved"></i> ПРАВИЛА ИСПОЛЬЗОВАНИЯ
+            </h2>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300 italic">
+                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> Запрещены торренты и P2P</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> Запрещены DDoS атаки</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> Запрещен спам и скам</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> ЗАПРЕЩЕНО РАСПРОСТРАНЕНИЕ КЛЮЧЕЙ</li>
+                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-green-500"></i> Работают быстрее и дольше</li>
+            </ul>
+        </div>
+
+        <!-- Auth Section -->
+        <div id="auth-section" class="glass-card p-8 rounded-2xl text-center mb-12 premium-accent">
+            <i class="fa-solid fa-vault text-4xl text-amber-500 mb-4"></i>
+            <h3 class="text-xl font-bold mb-4 uppercase">Доступ к Premium категории</h3>
+            <div class="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+                <input type="password" id="decryption-key" placeholder="Введите ваш ключ..." 
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:border-amber-500 transition-all">
+                <button onclick="handleDecrypt()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-6 rounded-lg transition-all">
+                    Войти
+                </button>
+            </div>
+            <p class="mt-4 text-xs text-slate-500">Все данные защищены алгоритмом AES-128 ECB</p>
+        </div>
+
+        <!-- Hidden Content Area -->
+        <div id="premium-content" class="hidden">
+            
+            <!-- MTProto -->
+            <section class="mb-12">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-8 w-1 bg-amber-500 rounded-full"></div>
+                    <h2 class="text-2xl font-bold uppercase italic">MTProto Premium</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="mtproto-list"></div>
+            </section>
+
+            <!-- SSH -->
+            <section class="mb-12">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-8 w-1 bg-amber-500 rounded-full"></div>
+                    <h2 class="text-2xl font-bold uppercase italic">SSH Premium</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="ssh-list"></div>
+            </section>
+
+            <!-- Xray -->
+            <section class="mb-12">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-8 w-1 bg-amber-500 rounded-full"></div>
+                    <h2 class="text-2xl font-bold uppercase italic">Xray Premium</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="xray-list"></div>
+            </section>
+
+            <div class="text-center mt-12">
+                <button onclick="resetAccess()" class="text-xs text-slate-600 hover:text-amber-500 uppercase tracking-widest font-bold transition-all">
+                    [ Завершить сеанс ]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const encryptedMTProto = [
+"lUQgq9PuRdVZEZPfd1Fpy9DJ45QKqy1P/Xjem3TWQz4vMBN9fFyruczlGndMVEcxwu5wmzPavNpHN/pSmcgWWUWHpExOAVGtcvr5/EodmiHTfwoNk3NFszcQll58WlXYeZSokOwVTkvKGJIUOSWbDQ==",
+"lUQgq9PuRdVZEZPfd1Fpy9DJ45QKqy1P/Xjem3TWQz4vMBN9fFyruczlGndMVEcxzUpVVjScoCpsi0iahQeyTkWHpExOAVGtcvr5/EodmiFEN1DMbHyopA2Rx3+2HFrt",
+"lUQgq9PuRdVZEZPfd1Fpy9UD5N8usnn8SbjF4WT8JFIvMBN9fFyruczlGndMVEcxhtvq7k6KDRbe5ocI3W+lEMuINRxAY5L6mU2Dp/56dutx4FYw+akh6UCtOd0TGUsV",
+"lUQgq9PuRdVZEZPfd1Fpy9ZWmOnctzK+o5QBehfSZ0NHihuoaemuj6oSgdEFhL9lYiU2BZEOcCEQWXu71uYsKzr4Uxm3cI3OqhTtgslb2+z0HIcb5Q70Zh2SbqQ5HAjj"
+        ];
+
+        const encryptedSSH = [
+            
+        ];
+
+        const encryptedXray = [
+"uMx4BfagB0H08O9SCJPeELXthtCmxQyI0Ri/WyABhmeOhoPWOwIhFzAuTbO6xulZH4T6FEM1SsTpuCAN6ztAaTUsZ9pXGN34mnUNaFepHf3mnBmAb5O2rVzRIfCPlXOR83r/QiAYcSyJtEfhMXifH19sBthlriIU+Cybikxbv87iqR+U0TzeOjJmH5mxHYL2YPHdh+yam8lfCUnVH4Ost09yQBj7gE1iGlj+pSqTGTfnHlgLZBUrhE0RXqWX+i8qsmfDr1ngEAGGzhRBGtjjbMYI68ZR653JrQDCL1VcAHp2QHliSsVPyTWGa1HA41ugOmCsl2xMbNEbK8dLlsYZum82H97koWz8fXtzUzO/24wR4io5iwu4AlyOCAKh4FWLEFR7KkPxTKTkqv75Ex6Ed5kcJQHLM5pMOdQfYIXB9asYjrEZidseE0T6jN9uSh/R",
+"k+3bfqwScJaZNLKZO2mxQi0XpZQSqdE6kjkV6RaDEKI8pFNpZrl/SCAQxSmkglTUErlkvT6GihToP4cZayY7qkNmtAipqe4xRUiKDEmphjyGeSZscOZ7BzTlwSEXBJasdT/bN+XA+IkjMSDvPYnfA4yxyySShmy8u2clJG5yUjJFbUwdAmPRo5rlRmc/SwF7t1ubL/dLkEa1dPiGLdyAlahuGREYeYPOuejs0ftzIGXAqgsd6/bvduOIK5zkhMI8GYUj8hTOOvumlHAFucLtnmQBdY5QxFmZgxgRiOp1zP0ymXJE+gIWLTeV7eTZFoaOD5zBT4i3GvhTI88MvgNtnDJxPYhuW6JLx7sNe1ypTZ2pGy4G//w5rmghuV/zKKfTPYNMGrZ59oFWaWm35gKOcg=="
+
+
+        ];
+
+        function decrypt(cipherText, key) {
+            try {
+                const keyHex = CryptoJS.enc.Utf8.parse(key);
+                const decrypted = CryptoJS.AES.decrypt(cipherText, keyHex, {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                const result = decrypted.toString(CryptoJS.enc.Utf8);
+                return result.length > 5 ? result : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function handleDecrypt() {
+            const key = document.getElementById('decryption-key').value.trim();
+            if (key.length === 0) return;
+
+            // Проверка ключа по первому элементу Xray
+            const test = decrypt(encryptedXray[0], key);
+            if (!test) {
+                const input = document.getElementById('decryption-key');
+                input.style.borderColor = '#ef4444';
+                setTimeout(() => input.style.borderColor = '', 1000);
+                return;
+            }
+
+            renderPremiumMTProto(key);
+            renderItems(encryptedSSH, key, 'ssh-list', 'fa-terminal');
+            renderItems(encryptedXray, key, 'xray-list', 'fa-atom');
+
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('premium-content').classList.remove('hidden');
+            
+            sessionStorage.setItem('cached_premium_key', key);
+        }
+
+        function renderPremiumMTProto(key) {
+            const container = document.getElementById('mtproto-list');
+            container.innerHTML = '';
+            
+            encryptedMTProto.forEach((cipher, i) => {
+                const link = decrypt(cipher, key);
+                if (!link) return;
+                
+                let server = "MTProto";
+                try { server = new URL(link.replace('tg://', 'https://t.me/')).searchParams.get('server'); } catch(e){}
+
+                const div = document.createElement('div');
+                div.className = 'glass-card p-6 rounded-2xl border-t-2 border-amber-500/50';
+                div.innerHTML = `
+                    <div class="mb-4">
+                        <p class="text-[10px] text-amber-500 uppercase font-black tracking-widest mb-1">Elite Node</p>
+                        <p class="text-sm font-mono truncate text-blue-300">${server}</p>
+                    </div>
+                    <a href="${link}" class="block w-full text-center bg-amber-600/20 hover:bg-amber-600 text-amber-500 hover:text-white py-2 rounded-lg text-sm font-bold transition-all border border-amber-600/30">
+                        Подключить
+                    </a>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderItems(cipherArray, key, containerId, icon) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            cipherArray.forEach((cipher, i) => {
+                const decrypted = decrypt(cipher, key);
+                if (!decrypted) return;
+
+                const name = decrypted.split('#')[1] || (containerId.includes('ssh') ? 'Premium SSH' : 'Quantum Node') + ' ' + (i+1);
+                
+                const div = document.createElement('div');
+                div.className = 'glass-card p-4 rounded-xl flex items-center justify-between group';
+                div.innerHTML = `
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="bg-amber-500/10 text-amber-500 w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-amber-500/20">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="font-bold text-sm truncate">${name}</p>
+                            <p class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter">Encrypted AES-128</p>
+                        </div>
+                    </div>
+                    <button onclick="copyToClipboard('${decrypted}')" class="text-slate-400 hover:text-amber-500 p-2 transition-colors">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        function resetAccess() {
+            sessionStorage.removeItem('cached_premium_key');
+            location.reload();
+        }
+
+        window.onload = () => {
+            const saved = sessionStorage.getItem('cached_premium_key');
+            if (saved) {
+                document.getElementById('decryption-key').value = saved;
+                handleDecrypt();
+            }
+        };
+
+        document.getElementById('decryption-key').onkeypress = (e) => { if(e.key === 'Enter') handleDecrypt(); };
+    </script>
+</body>
+  </html>
