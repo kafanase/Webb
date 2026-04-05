@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Universal Xray Resolver</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; color: #333; }
+        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #status { margin-top: 15px; font-weight: bold; color: #0056b3; }
+        .info { font-size: 0.85em; color: #666; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Universal Xray Resolver</h2>
+    <p class="info">Поддержка: VLESS, VMESS (Base64), Shadowsocks, Hysteria2, Trojan.<br>
+    Удаляет локальные IP (127.0.0.1, 192.168.x.x) и битые ссылки.</p>
+
+    <div class="container">
+        <input type="file" id="fileInput" accept=".txt">
+        <div id="status">Ожидание файла...</div>
+        <div id="stats" style="margin-top:10px; font-size: 0.9em;"></div>
+        <br>
+        <button id="dlBtn" style="display:none">Скачать результат (.txt)</button>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const stats = document.getElementById('stats');
+        const dlBtn = document.getElementById('dlBtn');
+
+        let outputLines = [];
+
+        const isIP = (str) => /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(str);
+        
+        const isPrivate = (ip) => {
+            if (!ip || ip === '127.0.0.1' || ip === '0.0.0.0' || ip === 'localhost') return true;
+            const p = ip.split('.').map(Number);
+            return (p[0] === 10 || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) || (p[0] === 192 && p[1] === 168));
+        };
+
+        async function resolveDNS(domain) {
+            if (isIP(domain)) return isPrivate(domain) ? null : domain;
+            try {
+                const res = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
+                const data = await res.json();
+                const ip = data.Answer?.find(a => a.type === 1)?.data;
+                return (ip && !isPrivate(ip)) ? ip : null;
+            } catch { return null; }
+        }
+
+        async function processStandardLink(link) {
+            try {
+                const atIndex = link.lastIndexOf('@');
+                if (atIndex === -1) return null;
+
+                let hostPart = "";
+                let remaining = link.substring(atIndex + 1);
+                const endMatch = remaining.match(/[:\/\?#]/);
+                const endIndex = endMatch ? endMatch.index : remaining.length;
+                hostPart = remaining.substring(0, endIndex);
+
+                if (!hostPart) return null;
+
+                const ip = await resolveDNS(hostPart);
+                if (!ip) return null;
+
+                let updatedLink = link.replace(`@${hostPart}`, `@${ip}`);
+
+                if (!isIP(hostPart)) {
+                    if (!updatedLink.includes('sni=')) {
+                        const separator = updatedLink.includes('?') ? '&' : '?';
+                        // Вставляем перед фрагментом #
+                        if (updatedLink.includes('#')) {
+                            updatedLink = updatedLink.replace('#', `${separator}sni=${hostPart}#`);
+                        } else {
+                            updatedLink += `${separator}sni=${hostPart}`;
+                        }
+                    }
+                }
+                return updatedLink;
+            } catch { return null; }
+        }
+
+        // VMESS
+        async function processVmess(link) {
+            try {
+                const rawData = link.replace('vmess://', '');
+                const decoded = JSON.parse(atob(rawData));
+                const host = decoded.add;
+
+                const ip = await resolveDNS(host);
+                if (!ip) return null;
+
+                if (!isIP(host)) {
+                    if (!decoded.sni) decoded.sni = host;
+                }
+                decoded.add = ip;
+
+                return 'vmess://' + btoa(JSON.stringify(decoded));
+            } catch { return null; }
+        }
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const text = await file.text();
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+            
+            status.innerText = "Обработка...";
+            dlBtn.style.display = "none";
+            
+            outputLines = [];
+            let removed = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                const link = lines[i];
+                let result = null;
+
+                if (link.startsWith('vmess://')) {
+                    result = await processVmess(link);
+                } else {
+                    result = await processStandardLink(link);
+                }
+
+                if (result) {
+                    outputLines.push(result);
+                } else {
+                    removed++;
+                }
+
+                if (i % 20 === 0) {
+                    status.innerText = `Обработано: ${Math.round((i/lines.length)*100)}%`;
+                }
+            }
+
+            status.innerText = "Готово!";
+            stats.innerText = `Успешно: ${outputLines.length} | Удалено (битые/локальные): ${removed}`;
+            dlBtn.style.display = "block";
+        };
+
+        dlBtn.onclick = () => {
+            const blob = new Blob([outputLines.join('\n')], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'resolved_keys.txt';
+            a.click();
+        };
+    </script>
+</body>
+</html>
