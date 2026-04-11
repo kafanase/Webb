@@ -42,13 +42,95 @@
             border-radius: 9999px;
             font-weight: 600;
             display: none;
-            z-index: 100;
+            z-index: 1000;
+        }
+
+        /* Modal Tutorial */
+        #safety-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            backdrop-filter: blur(15px);
+            overflow-y: auto;
+            padding: 20px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .step-img {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: 15px 0;
+        }
+        .alert-badge {
+            background: rgba(244, 63, 94, 0.1);
+            color: #fb7185;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid rgba(244, 63, 94, 0.2);
         }
     </style>
 </head>
 <body class="min-h-screen pb-12">
 
     <div id="toast" class="toast">Скопировано!</div>
+
+    <!-- Security Modal -->
+    <div id="safety-modal">
+        <div class="modal-content p-6 md:p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <span class="alert-badge mb-3 inline-block">ОПАСНОСТЬ MITM-АТАКИ</span>
+                <h2 class="text-2xl font-black text-white">Защитите свои данные!</h2>
+            </div>
+
+            <div class="space-y-6 text-slate-300 text-sm leading-relaxed">
+                <p>
+                    Протокол <span class="text-rose-400 font-bold">SOCKS5</span> сам по себе передает данные в открытом виде. Владелец прокси видит ваш трафик, пароли и историю.
+                </p>
+                
+                <div class="border-l-4 border-rose-500 bg-rose-500/5 p-4 rounded-r-xl">
+                    <strong>Что делать?</strong> Создайте <b>Прокси-цепочку</b>. Вы пускаете зашифрованный туннель поверх SOCKS5, делая MITM-атаку невозможной. Для примера возьмём клиент exclave.
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <span class="bg-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span>
+                        Шаг 1: Выберите создание цепочки
+                    </h4>
+                    <p class="mt-2 text-slate-400">В меню приложения выберите пункт "Прокси-цепочка" (как показано на скриншоте).</p>
+                    <img src="create-proxychain.png" alt="Прокси цепочка" class="step-img">
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <span class="bg-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">2</span>
+                        Шаг 2: Настройка слоев
+                    </h4>
+                    <p class="mt-2 text-slate-400">Первым слоем добавьте ваш SOCKS5, вторым — любой зашифрованный протокол (например, VMess). Теперь ваш трафик в безопасности.</p>
+                    <img src="proxy-chain.png" alt="ну че смотришь, иди делай" class="step-img">
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20">
+                        Я всё настроил, продолжить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container mx-auto px-4 py-12 max-w-5xl">
         <!-- Header -->
@@ -60,7 +142,7 @@
                 Proxy <span class="text-blue-500">Archive</span>
             </h1>
             <p class="text-slate-400 text-lg max-w-2xl mx-auto">
-                MTProto доступны всем. Для Xray и SSH требуется ключ из нашего канала.
+                Бесплатные MTproto, Xray, SSH, SOCKS5. Хотите доступ к остальным ключам? Возьмите ключ из ТГК, используя MTproto ниже
             </p>
         </header>
 
@@ -72,11 +154,10 @@
                     <h2 class="text-2xl font-bold">MTProto</h2>
                 </div>
                 <a href="https://t.me/+-WmZeQvTO542ZDdi" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm font-bold flex items-center gap-2">
-                    Взять ключ доступа <i class="fa-brands fa-telegram"></i>
+                    Взять ключ доступа<i class="fa-brands fa-telegram"></i>
                 </a>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="mtproto-list">
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="mtproto-list"></div>
         </section>
 
         <!-- Locked Content -->
@@ -89,80 +170,69 @@
                     <input type="password" id="decryption-key" placeholder="Введите ключ..." 
                         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                     <button onclick="handleDecrypt()" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded-lg transition-transform active:scale-95">
-                        Расшифровать данные
+                        Расшифровать
                     </button>
                 </div>
             </div>
 
-            <!-- Content to be decrypted -->
             <div id="secret-data" class="opacity-20 pointer-events-none transition-all duration-700 blur-sm">
                 <!-- SSH Section -->
                 <section class="mb-16">
                     <div class="flex items-center gap-3 mb-8">
                         <div class="h-8 w-1.5 bg-orange-500 rounded-full"></div>
-                        <h2 class="text-2xl font-bold">SSH-туннели</h2>
+                        <h2 class="text-2xl font-bold">SSH / SOCKS5</h2>
                     </div>
-                    <div class="grid gap-4" id="ssh-list">
-                    </div>
+                    <div class="grid gap-4" id="ssh-list"></div>
                 </section>
 
                 <!-- Xray Section -->
                 <section class="mb-16">
                     <div class="flex items-center gap-3 mb-8">
                         <div class="h-8 w-1.5 bg-emerald-500 rounded-full"></div>
-                        <h2 class="text-2xl font-bold">Xray (VLESS / VMess / Hysteria2 / SS)</h2>
+                        <h2 class="text-2xl font-bold">Xray (VLESS / VMess / Hysteria2)</h2>
                     </div>
-                    <div class="grid gap-4" id="xray-list">
-                    </div>
+                    <div class="grid gap-4" id="xray-list"></div>
                 </section>
             </div>
         </div>
 
         <footer class="mt-20 pt-8 border-t border-slate-800 text-center">
-            <button onclick="resetAccess()" class="text-xs text-slate-600 hover:text-blue-500">Сбросить ключ и заблокировать</button>
+            <button onclick="resetAccess()" class="text-xs text-slate-600 hover:text-blue-500">Сбросить сессию</button>
         </footer>
     </div>
 
     <script>
         const encryptedSSH = [
-"u27tYJCvKrcMSJUB6MijH2bjwWb08GL85UEW+H0b0lGKd8hmrqQwc247mb+5tlN8nFDff1yoGG9VeS28Qaun8/vKZMymQKVdxnVHc3AHlgFbZ+47xKv+fdJ3fvElGsGHwuLGP6tbMRfdJyVQiZdho+A3NhoraocGcJGazqD3tCFsooow9qatipUBlFqWw5ZV",
-"u27tYJCvKrcMSJUB6MijHxfRhgDvPWWN70ngFVmOw8gNWmz8Xw/o8X+FF5taX1xSkedHQPL/QAQ+lbpYCxAmq9QWC/EuACHtpUmxKmaGySVvPQyH/W4AYdwvnzYBmsLrQx4F3FbYBDxVYpbNeQvVjs04UOmfViX0e1RwFTtt+st1ZCe5A7oMtmbDJzTXsVr5"
-            ];
+"Df/tbi1chHRq0jUY75bpv0unhYMQJcOWt/cYw+170OM4ngMk3pAzJrnPjF88OArc"
+];
         const encryptedXray = [
 "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",
-"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"
-            ];
+"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"
+];
+        
         const mtprotoLinks = [
 "https://t.me/proxy?server=s1.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s2.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s3.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s7.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=212.233.76.27&port=443&secret=dd8fb807a1ac8c4e95b8a2642e5bedd8fc",
 "https://t.me/proxy?server=s8.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s6.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s4.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s5.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
 "https://t.me/proxy?server=s9.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
-"https://t.me/proxy?server=sosalproxy.ddns.net&port=8443&secret=ddbc29fd4a9e787e07b7b1c93000f9d44a",
-"https://t.me/proxy?server=212.233.76.27&port=443&secret=dd8fb807a1ac8c4e95b8a2642e5bedd8fc"
+"https://t.me/proxy?server=sosalproxy.ddns.net&port=8443&secret=ddbc29fd4a9e787e07b7b1c93000f9d44a"
         ];
-
 
         function decrypt(cipherText, key) {
             try {
@@ -173,27 +243,20 @@
                 });
                 const result = decrypted.toString(CryptoJS.enc.Utf8);
                 return result.length > 5 ? result : null;
-            } catch (e) {
-                return null;
-            }
+            } catch (e) { return null; }
         }
 
         function handleDecrypt() {
             const key = document.getElementById('decryption-key').value.trim();
-            if (key.length === 0) return;
-
-            const testSource = encryptedXray.length > 0 ? encryptedXray[0] : (encryptedSSH.length > 0 ? encryptedSSH[0] : null);
-            
-            if (testSource) {
-                const check = decrypt(testSource, key);
-                if (!check) {
-                    showError();
-                    return;
-                }
-            }
+            if (!key) return;
 
             const sshDec = encryptedSSH.map(c => decrypt(c, key)).filter(v => v);
             const xrayDec = encryptedXray.map(c => decrypt(c, key)).filter(v => v);
+
+            if ((encryptedSSH.length > 0 || encryptedXray.length > 0) && (sshDec.length === 0 && xrayDec.length === 0)) {
+                showError();
+                return;
+            }
 
             renderItems(sshDec, 'ssh-list', 'fa-terminal', 'orange');
             renderItems(xrayDec, 'xray-list', 'fa-bolt', 'emerald');
@@ -201,7 +264,6 @@
             document.getElementById('auth-gate').style.opacity = '0';
             document.getElementById('auth-gate').style.pointerEvents = 'none';
             document.getElementById('secret-data').classList.remove('opacity-20', 'blur-sm', 'pointer-events-none');
-            
             sessionStorage.setItem('cached_key', key);
         }
 
@@ -215,6 +277,7 @@
             const container = document.getElementById(containerId);
             container.innerHTML = '';
             items.forEach((key, i) => {
+                const name = key.includes('#') ? key.split('#')[1] : 'Конфиг #' + (i+1);
                 const div = document.createElement('div');
                 div.className = 'glass-card p-4 rounded-xl flex items-center justify-between group';
                 div.innerHTML = `
@@ -223,11 +286,12 @@
                             <i class="fa-solid ${icon}"></i>
                         </div>
                         <div class="overflow-hidden">
-                            <p class="font-bold text-slate-200 truncate">${key.split('#')[1] || 'Конфиг #' + (i+1)}</p>
-                            <p class="text-xs text-slate-500 truncate font-mono">${key.substring(0, 30)}...</p>
+                            <p class="font-bold text-slate-200 truncate">${name}</p>
+                            <p class="text-xs text-slate-500 truncate font-mono">${key.substring(0, 40)}...</p>
                         </div>
                     </div>
-                    <button onclick="copyToClipboard('${key}')" class="hover:bg-blue-600 p-2 rounded-lg transition-colors">
+                    <button onclick="copyToClipboard('${key}')" class="hover:bg-blue-600 p-2 px-3 rounded-lg transition-colors flex items-center gap-2">
+                        <span class="text-xs font-bold hidden md:inline">COPY</span>
                         <i class="fa-solid fa-copy"></i>
                     </button>
                 `;
@@ -244,11 +308,11 @@
                 div.className = 'glass-card p-4 rounded-xl border-l-4 border-l-blue-500';
                 div.innerHTML = `
                     <div class="mb-3">
-                        <p class="text-xs text-slate-500 uppercase font-bold">Server</p>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">MTProto Server</p>
                         <p class="text-sm font-mono truncate text-blue-300">${server}</p>
                     </div>
-                    <a href="${link}" class="block w-full text-center bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white py-2 rounded-lg text-sm font-bold transition-all">
-                        Подключить
+                    <a href="${link}" class="block w-full text-center bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white py-2 rounded-lg text-sm font-bold transition-all border border-blue-500/20">
+                        ПОДКЛЮЧИТЬ
                     </a>
                 `;
                 container.appendChild(div);
@@ -262,9 +326,24 @@
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
+            
             const toast = document.getElementById('toast');
             toast.style.display = 'block';
             setTimeout(() => toast.style.display = 'none', 2000);
+
+            if (text.toLowerCase().startsWith('socks5://')) {
+                setTimeout(showModal, 400);
+            }
+        }
+
+        function showModal() {
+            document.getElementById('safety-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('safety-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
 
         function resetAccess() {
