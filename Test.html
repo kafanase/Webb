@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Proxy Hub | MTProto, Xray & SSH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CryptoJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f1f5f9;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .locked-overlay {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+        }
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            display: none;
+            z-index: 1000;
+        }
+
+        /* Modal Tutorial */
+        #safety-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            backdrop-filter: blur(15px);
+            overflow-y: auto;
+            padding: 20px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .step-img {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: 15px 0;
+        }
+        .alert-badge {
+            background: rgba(244, 63, 94, 0.1);
+            color: #fb7185;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <div id="toast" class="toast">Скопировано!</div>
+
+    <!-- Security Modal -->
+    <div id="safety-modal">
+        <div class="modal-content p-6 md:p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <span class="alert-badge mb-3 inline-block">ОПАСНОСТЬ MITM-АТАКИ</span>
+                <h2 class="text-2xl font-black text-white">Защитите свои данные!</h2>
+            </div>
+
+            <div class="space-y-6 text-slate-300 text-sm leading-relaxed">
+                <p>
+                    Протокол <span class="text-rose-400 font-bold">SOCKS5</span> сам по себе передает данные в открытом виде. Владелец прокси видит ваш трафик, пароли и историю.
+                </p>
+                
+                <div class="border-l-4 border-rose-500 bg-rose-500/5 p-4 rounded-r-xl">
+                    <strong>Что делать?</strong> Создайте <b>Прокси-цепочку</b>. Вы пускаете зашифрованный туннель поверх SOCKS5, делая MITM-атаку невозможной. Для примера возьмём клиент exclave.
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <span class="bg-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span>
+                        Шаг 1: Выберите создание цепочки
+                    </h4>
+                    <p class="mt-2 text-slate-400">В меню приложения выберите пункт "Прокси-цепочка" (как показано на скриншоте).</p>
+                    <img src="create-proxychain.png" alt="Прокси цепочка" class="step-img">
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <span class="bg-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">2</span>
+                        Шаг 2: Настройка слоев
+                    </h4>
+                    <p class="mt-2 text-slate-400">Первым слоем добавьте ваш SOCKS5, вторым — любой зашифрованный протокол (например, VMess). Теперь ваш трафик в безопасности.</p>
+                    <img src="proxy-chain.png" alt="ну че смотришь, иди делай" class="step-img">
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20">
+                        Я всё настроил, продолжить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-12 max-w-5xl">
+        <!-- Header -->
+        <header class="text-center mb-16">
+            <div class="inline-block p-3 rounded-2xl bg-blue-500/10 mb-4 border border-blue-500/20">
+                <i class="fa-solid fa-shield-halved text-3xl text-blue-400"></i>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight">
+                Proxy <span class="text-blue-500">Archive</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                Бесплатные MTproto, Xray, SSH, SOCKS5. Хотите доступ к остальным ключам? Возьмите ключ из ТГК, используя MTproto ниже
+            </p>
+        </header>
+
+        <!-- MTProto Section -->
+        <section class="mb-16">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-1.5 bg-blue-500 rounded-full"></div>
+                    <h2 class="text-2xl font-bold">MTProto</h2>
+                </div>
+                <a href="https://t.me/+-WmZeQvTO542ZDdi" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm font-bold flex items-center gap-2">
+                    Взять ключ доступа<i class="fa-brands fa-telegram"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="mtproto-list"></div>
+        </section>
+
+        <!-- Locked Content -->
+        <div id="lock-container" class="relative">
+            <div id="auth-gate" class="absolute inset-0 z-10 locked-overlay rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-all duration-500">
+                <div class="bg-slate-900 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-sm w-full">
+                    <i class="fa-solid fa-lock text-4xl text-blue-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Контент зашифрован</h3>
+                    <p class="text-slate-400 text-sm mb-6">Используйте MTProto выше, чтобы зайти в ТГК и скопировать ключ для xray ключей.</p>
+                    <input type="password" id="decryption-key" placeholder="Введите ключ..." 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <button onclick="handleDecrypt()" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded-lg transition-transform active:scale-95">
+                        Расшифровать
+                    </button>
+                </div>
+            </div>
+
+            <div id="secret-data" class="opacity-20 pointer-events-none transition-all duration-700 blur-sm">
+                <!-- SSH Section -->
+                <section class="mb-16">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="h-8 w-1.5 bg-orange-500 rounded-full"></div>
+                        <h2 class="text-2xl font-bold">SSH / SOCKS5</h2>
+                    </div>
+                    <div class="grid gap-4" id="ssh-list"></div>
+                </section>
+
+                <!-- Xray Section -->
+                <section class="mb-16">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="h-8 w-1.5 bg-emerald-500 rounded-full"></div>
+                        <h2 class="text-2xl font-bold">Xray (VLESS / VMess / Hysteria2)</h2>
+                    </div>
+                    <div class="grid gap-4" id="xray-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <footer class="mt-20 pt-8 border-t border-slate-800 text-center">
+            <button onclick="resetAccess()" class="text-xs text-slate-600 hover:text-blue-500">Сбросить сессию</button>
+        </footer>
+    </div>
+
+    <script>
+        // Вставьте свои зашифрованные строки сюда
+        const encryptedSSH = [
+"Df/tbi1chHRq0jUY75bpv0unhYMQJcOWt/cYw+170OM4ngMk3pAzJrnPjF88OArc"
+];
+        const encryptedXray = [
+"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"
+];
+        
+        const mtprotoLinks = [
+"https://t.me/proxy?server=s1.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s2.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s3.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s7.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=212.233.76.27&port=443&secret=dd8fb807a1ac8c4e95b8a2642e5bedd8fc",
+"https://t.me/proxy?server=s8.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s6.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s4.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s5.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=s9.dimasssss.space&port=443&secret=ddbe3007e927acd147dde12bee8b1a7c93",
+"https://t.me/proxy?server=sosalproxy.ddns.net&port=8443&secret=ddbc29fd4a9e787e07b7b1c93000f9d44a"
+        ];
+
+        function decrypt(cipherText, key) {
+            try {
+                const keyHex = CryptoJS.enc.Utf8.parse(key);
+                const decrypted = CryptoJS.AES.decrypt(cipherText, keyHex, {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                const result = decrypted.toString(CryptoJS.enc.Utf8);
+                return result.length > 5 ? result : null;
+            } catch (e) { return null; }
+        }
+
+        function handleDecrypt() {
+            const key = document.getElementById('decryption-key').value.trim();
+            if (!key) return;
+
+            const sshDec = encryptedSSH.map(c => decrypt(c, key)).filter(v => v);
+            const xrayDec = encryptedXray.map(c => decrypt(c, key)).filter(v => v);
+
+            if ((encryptedSSH.length > 0 || encryptedXray.length > 0) && (sshDec.length === 0 && xrayDec.length === 0)) {
+                showError();
+                return;
+            }
+
+            renderItems(sshDec, 'ssh-list', 'fa-terminal', 'orange');
+            renderItems(xrayDec, 'xray-list', 'fa-bolt', 'emerald');
+
+            document.getElementById('auth-gate').style.opacity = '0';
+            document.getElementById('auth-gate').style.pointerEvents = 'none';
+            document.getElementById('secret-data').classList.remove('opacity-20', 'blur-sm', 'pointer-events-none');
+            sessionStorage.setItem('cached_key', key);
+        }
+
+        function showError() {
+            const input = document.getElementById('decryption-key');
+            input.classList.add('border-red-500', 'bg-red-500/10');
+            setTimeout(() => input.classList.remove('border-red-500', 'bg-red-500/10'), 1000);
+        }
+
+        function renderItems(items, containerId, icon, color) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            items.forEach((key, i) => {
+                const name = key.includes('#') ? key.split('#')[1] : 'Конфиг #' + (i+1);
+                const div = document.createElement('div');
+                div.className = 'glass-card p-4 rounded-xl flex items-center justify-between group';
+                div.innerHTML = `
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="bg-${color}-500/20 text-${color}-400 w-10 h-10 rounded-lg flex items-center justify-center shrink-0">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="font-bold text-slate-200 truncate">${name}</p>
+                            <p class="text-xs text-slate-500 truncate font-mono">${key.substring(0, 40)}...</p>
+                        </div>
+                    </div>
+                    <button onclick="copyToClipboard('${key}')" class="hover:bg-blue-600 p-2 px-3 rounded-lg transition-colors flex items-center gap-2">
+                        <span class="text-xs font-bold hidden md:inline">COPY</span>
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderMTProto() {
+            const container = document.getElementById('mtproto-list');
+            mtprotoLinks.forEach(link => {
+                const url = new URL(link.replace('tg://', 'https://t.me/'));
+                const server = url.searchParams.get('server');
+                const div = document.createElement('div');
+                div.className = 'glass-card p-4 rounded-xl border-l-4 border-l-blue-500';
+                div.innerHTML = `
+                    <div class="mb-3">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">MTProto Server</p>
+                        <p class="text-sm font-mono truncate text-blue-300">${server}</p>
+                    </div>
+                    <a href="${link}" class="block w-full text-center bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white py-2 rounded-lg text-sm font-bold transition-all border border-blue-500/20">
+                        ПОДКЛЮЧИТЬ
+                    </a>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+
+            if (text.toLowerCase().startsWith('socks5://')) {
+                setTimeout(showModal, 400);
+            }
+        }
+
+        function showModal() {
+            document.getElementById('safety-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('safety-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function resetAccess() {
+            sessionStorage.removeItem('cached_key');
+            location.reload();
+        }
+
+        window.onload = () => {
+            renderMTProto();
+            const saved = sessionStorage.getItem('cached_key');
+            if (saved) {
+                document.getElementById('decryption-key').value = saved;
+                handleDecrypt();
+            }
+        };
+
+        document.getElementById('decryption-key').onkeypress = (e) => { if(e.key === 'Enter') handleDecrypt(); };
+    </script>
+</body>
+  </html>
